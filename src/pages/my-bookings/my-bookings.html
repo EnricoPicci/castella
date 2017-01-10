@@ -27,7 +27,7 @@
       http://stackoverflow.com/questions/40923656/best-practice-for-master-detail-on-desktop-detail-only-on-mobile-for-angular2-a
     -->
     <div *showItDevice="['desktop','smartTv']">
-      <ion-item *ngFor="let booking of bookings">
+      <ion-item *ngFor="let booking of bookings" [class.booking-selected]="isSelected(booking)">
         <ion-badge item-left color={{getStatusColor(booking)}} style="width: 77px">{{booking.status.text}}</ion-badge>
         <ion-label>{{getBookingDesc(booking)}}</ion-label>
         <button ion-button clear item-right color="danger" *ngIf="!booking.isCancelled()">

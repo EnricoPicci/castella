@@ -59,6 +59,7 @@ export class BookingsService {
     }
 
     const newBookingsKey = this.sdkDb.child('bookings').push().key;
+    booking.$key = newBookingsKey;  // set to allow the selection of the current booking to work even for newly created bookings
     let dataToSave = {};
     dataToSave["bookings/" + newBookingsKey] = bookingToSave;
     return this.firebaseUpdate(dataToSave);

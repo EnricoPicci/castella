@@ -147,6 +147,7 @@ export class MyBookingsPage implements OnDestroy {
           text: 'Yeap',
           handler: () => {
             this.session.booking = booking;
+            this.unsubscribeFirebase();
             this.navCtrl.push(BookPage);
           }
         }
@@ -155,12 +156,20 @@ export class MyBookingsPage implements OnDestroy {
     confirm.present()
   }
 
-  ngOnDestroy(){
+  isSelected(booking: Booking) {
+    return this.session.booking && booking.$key == this.session.booking.$key
+  }
+
+  unsubscribeFirebase(){
     console.log('destroy MyBookingsPage 1', this.bookingsSubscriptions);
     for(let i = 0; i < this.bookingsSubscriptions.length; i++) {
       this.bookingsSubscriptions[i].unsubscribe();
       console.log('destroy MyBookingsPage 2');
     }
+  }
+
+  ngOnDestroy(){
+    this.unsubscribeFirebase();
   }
 
 }

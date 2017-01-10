@@ -8,7 +8,8 @@ import {
   addMonths,
   subMonths,
   isPast,
-  differenceInCalendarDays
+  differenceInCalendarDays,
+  isWithinRange
 } from 'date-fns';
 
 import 'intl';
@@ -34,12 +35,10 @@ import {MyBookingsPage} from '../my-bookings/my-bookings';
 })
 export class CalendarPage implements OnDestroy {
   viewDate: Date = new Date();
-  //originalBooking: Booking;
-  originalBookingStartDate: Date;
-  originalBookingEndDate: Date;
-  _events = [];
+  originalEventCopy: CalendarEvent; // contains a copy of the original data of the event which is under modification
+  _events = new Array<CalendarEvent>();
   refresh: Subject<any> = new Subject();
-  bookingsSubscription: Subscription;
+  bookingsSubscriptions = new Array<Subscription>();
 
   constructor(
     public navCtrl: NavController, 
@@ -53,14 +52,13 @@ export class CalendarPage implements OnDestroy {
   ionViewDidLoad() {
     console.log('ionViewDidLoad CalendarPage');
     if (!this.session.booking.isNew()) {
-      console.log('booking to modify', this.session.booking);
       this.viewDate = this.session.booking.event.start;
     }
     let loading = this.loadingCtrl.create({
       content: 'Please wait while we load the calendar'
     });
     loading.present();
-    this.bookingsSubscription = this.bookingService.findBookingsByMonth(this.viewDate)
+    let bookingSubscription = this.bookingService.findBookingsByMonth(this.viewDate)
       .subscribe(
           (bookings) => {
                           loading.dismiss();
@@ -69,21 +67,59 @@ export class CalendarPage implements OnDestroy {
                             const bookingSelected = bookings
                                                     .filter(booking => booking.$key == this.session.booking.$key);
                             this.session.booking = bookingSelected[0];
-                            this.originalBookingStartDate = this.session.booking.event.start;
-                            this.originalBookingEndDate = this.session.booking.event.end;
+                            this.originalEventCopy = {
+                              start: this.session.booking.event.start,
+                              end: this.session.booking.event.end,
+                              title: this.session.booking.event.title,
+                              color: this.session.booking.event.color
+                            }
+                            // remove the event of the booking in the session from the list of events to be displayed
+                            const indexOfBookingOnEdit = this._events.indexOf(this.session.booking.event);
+                            this._events.splice(indexOfBookingOnEdit, 1);
+                            this.resetDatesForEventInSession();
                           }
                           console.log('booking selected', this.session.booking);
                           this.refresh.next();
                         }
       );
+      this.bookingsSubscriptions.push(bookingSubscription);
   }
 
   dayClicked({date, events}: {date: Date, events: CalendarEvent[]}): void {
-    if (isPast(date) || (events.length > 0)) {
-      // return;
+    if (isPast(date)) {
+      // ignore clicks on past days
+      const title = 'Past';
+      const message = 'U can not book in the past'
+      this.selectionNotValid(title, message);
+      return;  
     }
+    if ((events.length > 0)) {
+      // ignore clicks on days with already some bookings
+      this.resetDatesForEventInSession();
+      const title = 'Not Free';
+      const message = 'U can not book if the day is already booked'
+      this.selectionNotValid(title, message);
+      return;  
+    }
+    if (this.session.booking.event.start && !this.session.booking.event.end && date > this.session.booking.event.start) {
+      let newEventContainsEvents = false;
+      for (let i = 0; i < this._events.length; i++) {
+        let eventStart = this._events[i].start;
+        newEventContainsEvents = isWithinRange(eventStart, this.session.booking.event.start, date);
+        if (newEventContainsEvents) {break}
+      }
+      if (newEventContainsEvents) {
+        // ignore tentative bookings which contain other bookings
+        this.resetDatesForEventInSession();
+        const title = 'Contain other bookings';
+        const message = 'U can not book a period which contains days already booked'
+        this.selectionNotValid(title, message);
+        return;
+      }
+    }
+    
     if (this.session.booking.event.start && this.session.booking.event.end) {
-      this.cancelEvent();
+      this.resetDatesForEventInSession();  // reset the start and end dates since the user has clicked again
     } 
     if (!this.session.booking.event.start || this.session.booking.event.start > date) {
       this.session.booking.event.start = date;
@@ -93,37 +129,49 @@ export class CalendarPage implements OnDestroy {
     }
     this.refresh.next();
   }
+  selectionNotValid(title: string, message: string) {
+    let confirm = this.alerCtrl.create({
+      title: title,
+      message: message,
+      enableBackdropDismiss: false,            
+      buttons: [
+        {
+          text: 'OK'
+        }
+      ]
+    });
+    confirm.present()
+  }
 
-  cancelEvent() {
-    //this.events = this.events.filter(iEvent => iEvent !== this.session.booking.event);
+  resetDatesForEventInSession() {
     this.session.booking.event.start = null;
     this.session.booking.event.end = null;
-  }
-  resetEvent() {
-    //this.events = this.events.filter(iEvent => iEvent !== this.session.booking.event);
-    this.session.booking.event.start = this.originalBookingStartDate;
-    this.session.booking.event.end = this.originalBookingEndDate;
+    this.refresh.next();
   }
 
   dayModifier = (dayCell) => {
-    if (!this.session.booking) {
-      return 
-    }
     const eventToBeBooked = this.session.booking.event;
-    let isDayWithinEvent = false;
-    if (eventToBeBooked.start) {
-      const cellDate = dayCell.date;
-      isDayWithinEvent = isSameDay(cellDate, eventToBeBooked.start) || 
-                              isSameDay(cellDate, eventToBeBooked.end) ||
-                              (isAfter(cellDate, eventToBeBooked.start) && isBefore(cellDate, eventToBeBooked.end));
-      if (isDayWithinEvent) {
-        if (this.session.booking.isNew()) {
-          dayCell.cssClass = 'cal-day-to-be-booked-cell';
-        } else {
-          dayCell.cssClass = 'cal-day-to-be-modified-cell';
-        }
-      }
+    const isDayWithinEventToBeBooked = this.isCellWithinEvent(dayCell, eventToBeBooked);;
+    let isDayWithinOriginalEvent = false;
+    if (this.originalEventCopy) {
+      isDayWithinOriginalEvent = this.isCellWithinEvent(dayCell, this.originalEventCopy);
     }
+    if (isDayWithinEventToBeBooked) {
+      dayCell.cssClass = 'cal-day-to-be-booked-cell';
+    } else
+    if (isDayWithinOriginalEvent) {
+      dayCell.cssClass = 'cal-day-to-be-modified-cell';
+    }
+  }
+  isCellWithinEvent(dayCell, event: CalendarEvent) : boolean {
+    let isDayWithinEvent = false;
+    if (event.start) {
+      const cellDate = dayCell.date;
+      isDayWithinEvent = isSameDay(cellDate, event.start) || 
+                              isSameDay(cellDate, event.end) ||
+                              (isAfter(cellDate, event.start) && isBefore(cellDate, event.end));
+    }
+    return isDayWithinEvent
   }
 
   confirmBooking() {
@@ -144,17 +192,14 @@ export class CalendarPage implements OnDestroy {
         {
           text: 'NO',
           handler: () => {
-            if (this.session.booking.isNew()) {
-              this.cancelEvent();
-            } else {
-              this.resetEvent();
-            }
+            this.resetDatesForEventInSession();
             this.refresh.next();
           }
         },
         {
           text: 'Yeap',
           handler: () => {
+            this.unsubscribeFirebase();
             if (this.session.booking.isNew()) {
               // insert a new booking
               this._events.push(this.session.booking.event);
@@ -162,27 +207,24 @@ export class CalendarPage implements OnDestroy {
                                               .subscribe(
                                                 () => {
                                                         console.log('booking created');
-                                                        this.bookingsSubscription.unsubscribe();
-                                                        this.bookingsSubscription = null;
-                                                        this.navCtrl.setRoot(MyBookingsPage);
+                                                        this.bookingRegistered();
                                                       },
                                                 (err) => console.log(ErrorEvent)
                                               );
+              this.bookingsSubscriptions.push(bookingSubscription);
             } else {
               // update a booking
+              console.log('booking updated 0', this.session.booking);
               let bookingSubscription = this.bookingService.updateBooking(this.session.booking)
                                               .subscribe(
                                                 () => {
-                                                        console.log('booking updated');
-                                                        this.bookingsSubscription.unsubscribe();
-                                                        this.bookingsSubscription = null;
-                                                        this.navCtrl.setRoot(MyBookingsPage);
+                                                        console.log('booking updated 1', this.session.booking);
+                                                        this.bookingRegistered();
                                                       },
                                                 (err) => console.log(ErrorEvent)
                                               );
+              this.bookingsSubscriptions.push(bookingSubscription);
             }
-            this.refresh.next();
-            this.bookingRegistered();
           }
         }
       ]
@@ -199,6 +241,9 @@ export class CalendarPage implements OnDestroy {
       buttons: [
         {
           text: 'OK',
+          handler: () => {
+            this.navCtrl.setRoot(MyBookingsPage);
+          }
         }
       ]
     });
@@ -214,8 +259,8 @@ export class CalendarPage implements OnDestroy {
   }
   swipeEvent(e) {
     if (e.direction == 2) {
-        //direction 2 = right to left swipe.
-        this.incrementMonth();
+      //direction 2 = right to left swipe.
+      this.incrementMonth();
     } else 
     if (e.direction == 4) {
       //direction 4 = left to right swipe.
@@ -229,10 +274,13 @@ export class CalendarPage implements OnDestroy {
     this.viewDate = subMonths(this.viewDate, 1);
   }
 
-  ngOnDestroy(){
-    if (this.bookingsSubscription) {
-      this.bookingsSubscription.unsubscribe();
+  unsubscribeFirebase() {
+    for(let i = 0; i < this.bookingsSubscriptions.length; i++) {
+      this.bookingsSubscriptions[i].unsubscribe();
     }
+  }
+  ngOnDestroy(){
+    this.unsubscribeFirebase();
   }
 
 }
