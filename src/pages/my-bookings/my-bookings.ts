@@ -31,11 +31,6 @@ export class MyBookingsPage implements OnDestroy {
   ) {}
 
   ionViewDidLoad() {
-    if (this.navCtrl.first().name !== 'MyBookingsPage') {
-    }
-    console.log('NavCtrl first MyBookingsPage', this.navCtrl.first().name)
-    console.log('ionViewDidLoad MyBookingsPage');
-    console.log('ionViewDidLoad MyBookingsPage', this.bookingsSubscriptions);
     let loading = this.loadingCtrl.create({
       content: 'Please wait while we load your booking'
     });
@@ -43,17 +38,12 @@ export class MyBookingsPage implements OnDestroy {
     let subscription = this.bookingService.findBookingsByUser(this.session.user)
       .subscribe(
           (bookings) => {
-                          console.log('loading MyBookingsPage 1');
                           loading.dismiss();
                           this.bookings = bookings;
-                          console.log('loading MyBookingsPage 2');
                           this.bookingsSubscriptions.push(subscription);
                         },
           (err) => console.log(err)
       );
-  }
-  ngOnInit() {
-    console.log('NavCtrl first MyBookingsPage 0', this.navCtrl.first().name)
   }
 
   getListHeader() {

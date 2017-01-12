@@ -8,7 +8,6 @@ import {
   addMonths,
   subMonths,
   isPast,
-  differenceInCalendarDays,
   isWithinRange
 } from 'date-fns';
 
@@ -19,7 +18,6 @@ import 'intl/locale-data/jsonp/it';
 import {CalendarEvent} from 'angular-calendar';
 import {Session} from '../../providers/session';
 import {BookingsService} from '../../providers/bookings-service';
-import {Booking} from '../../model/booking';
 import {MyBookingsPage} from '../my-bookings/my-bookings';
 
 /*
@@ -280,6 +278,14 @@ export class CalendarPage implements OnDestroy {
     }
   }
   ngOnDestroy(){
+    // if CalendarPage is entered in edit mode (i.e. to change a booking)
+    // and if the back button is pressed without saving the change in the booking
+    // we need to reset the value of the dates of the booking in the session
+    // since they may have been nullified by the resetDatesForEventInSession() method
+    if (!this.session.booking.event.start || this.session.booking.event.end) {
+      this.session.booking.event.start = this.originalEventCopy.start;
+      this.session.booking.event.end = this.originalEventCopy.end;
+    }
     this.unsubscribeFirebase();
   }
 

@@ -5,7 +5,6 @@ import { NavController, NavParams, AlertController } from 'ionic-angular';
 import {CalendarPage} from '../calendar/calendar';
 import {Session} from '../../providers/session';
 import {BookingsService} from '../../providers/bookings-service';
-import {User} from '../../model/user';
 import {Booking} from '../../model/booking';
 import {appConfig} from '../../app/app.config';
 
@@ -48,13 +47,6 @@ export class BookPage implements OnInit, OnDestroy {
   }
 
   chooseDate(event) {
-    /*let newEvent = {
-      start: null,
-      end: null,
-      title: this.session.user.name + ' with ' + (this.session.booking.guests-1) + ' others',
-      color: this.session.booking.status.color
-    };
-    this.session.booking.event = newEvent;*/
     this.session.booking.event.title = this.session.user.name + ' with ' + 
                                         (this.session.booking.guests-1) + ' others';
     this.navCtrl.push(CalendarPage);

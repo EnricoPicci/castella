@@ -4,9 +4,6 @@ import { Platform, MenuController, Nav, NavController } from 'ionic-angular';
 
 import { StatusBar, Splashscreen } from 'ionic-native';
 
-import { HelloIonicPage } from '../pages/hello-ionic/hello-ionic';
-import { ListPage } from '../pages/list/list';
-
 import {HelloCastellammarePage} from '../pages/hello-castellammare/hello-castellammare';
 import {BookPage} from '../pages/book/book';
 import {MyBookingsPage} from '../pages/my-bookings/my-bookings';

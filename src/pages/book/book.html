@@ -24,7 +24,7 @@
       </ion-badge>
     </ion-item>
     <ion-item>
-      <ion-range pin="true" min="1" max="8" step="1" snaps="true" debounce="1000"
+      <ion-range pin="true" min="1" max="8" step="1" snaps="true" debounce="500"
                 [(ngModel)]="session.booking.guests" color="dark" (ionChange)="numberOfGuestsChanged()">
         <ion-icon range-left small name="person"></ion-icon>
         <ion-icon range-right name="people"></ion-icon>

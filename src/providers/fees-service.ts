@@ -1,8 +1,7 @@
 import {Injectable, Inject} from '@angular/core';
-import {Observable, Subject} from "rxjs/Rx";
+import {Observable} from "rxjs/Rx";
 import 'rxjs/add/operator/map';
 import {AngularFireDatabase, FirebaseRef} from "angularfire2";
-import {firebaseConfig} from "../environments/firebase.config";
 
 import {User} from '../model/user';
 
@@ -39,7 +38,7 @@ export class FeesService {
     const feesToSave = {
       default: 50
     }
-    const newFeesKey = this.sdkDb.child('fees').push(feesToSave);
+    this.sdkDb.child('fees').push(feesToSave);
   }
 
 }

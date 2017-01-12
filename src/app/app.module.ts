@@ -9,9 +9,6 @@ import { CalendarModule, CalendarEventTitleFormatter } from 'angular-calendar';
 import { CustomEventTitleFormatter } from '../pages/calendar/custom-title-formatter.provider';
 
 import { MyApp } from './app.component';
-import { HelloIonicPage } from '../pages/hello-ionic/hello-ionic';
-import { ItemDetailsPage } from '../pages/item-details/item-details';
-import { ListPage } from '../pages/list/list';
 import {HelloCastellammarePage} from '../pages/hello-castellammare/hello-castellammare';
 import {BookPage} from '../pages/book/book';
 import {CalendarPage} from '../pages/calendar/calendar';
@@ -38,9 +35,6 @@ let config: ResponsiveConfigInterface = {
 @NgModule({
   declarations: [
     MyApp,
-    HelloIonicPage,
-    ItemDetailsPage,
-    ListPage,
     HelloCastellammarePage,
     BookPage,
     CalendarPage,
@@ -58,9 +52,6 @@ let config: ResponsiveConfigInterface = {
   bootstrap: [IonicApp],
   entryComponents: [
     MyApp,
-    HelloIonicPage,
-    ItemDetailsPage,
-    ListPage,
     HelloCastellammarePage,
     BookPage,
     CalendarPage,

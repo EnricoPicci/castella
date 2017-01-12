@@ -2,7 +2,6 @@ import {Injectable, Inject} from '@angular/core';
 import {Observable, Subject} from "rxjs/Rx";
 import 'rxjs/add/operator/map';
 import {AngularFireDatabase, FirebaseRef} from "angularfire2";
-import {firebaseConfig} from "../environments/firebase.config";
 
 import {Booking} from '../model/booking';
 import {User} from '../model/user';
